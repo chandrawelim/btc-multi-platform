@@ -16,6 +16,15 @@ final class RemoteBTCPriceLoaderTests: XCTestCase {
         XCTAssertTrue(client.requestedURLs.isEmpty)
     }
     
+    func test_load_requestsDataFromURL() {
+        let url = BTCPriceEndpoint.binance.url
+        let (sut, client) = makeSUT(endpoint: .binance)
+        
+        sut.load { _ in }
+        
+        XCTAssertEqual(client.requestedURLs, [url])
+    }
+    
     func test_loadTwice_requestsDataFromURLTwice() {
         let url = BTCPriceEndpoint.binance.url
         let (sut, client) = makeSUT(endpoint: .binance)
