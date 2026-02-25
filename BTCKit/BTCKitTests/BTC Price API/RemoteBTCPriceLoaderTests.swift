@@ -86,6 +86,19 @@ final class RemoteBTCPriceLoaderTests: XCTestCase {
         })
     }
     
+    func test_load_doesNotDeliverResultAfterSUTInstanceHasBeenDeallocated() {
+        let client = HTTPClientSpy()
+        var sut: RemoteBTCPriceLoader? = RemoteBTCPriceLoader(client: client, endpoint: .binance)
+        
+        var receivedResults = [BTCPriceLoader.Result]()
+        sut?.load { receivedResults.append($0) }
+        
+        sut = nil
+        client.complete(withStatusCode: 200, data: makeBinanceJSON(price: "87769.24"))
+        
+        XCTAssertTrue(receivedResults.isEmpty)
+    }
+    
     // MARK: - Helpers
     
     private func makeSUT(endpoint: BTCPriceEndpoint, file: StaticString = #file, line: UInt = #line) -> (sut: RemoteBTCPriceLoader, client: HTTPClientSpy) {
