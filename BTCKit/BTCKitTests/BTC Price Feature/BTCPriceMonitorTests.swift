@@ -10,6 +10,14 @@ import BTCKit
 
 final class BTCPriceMonitorTests: XCTestCase {
     
+    func test_init_doesNotStartMonitoring() {
+        let (_, primaryLoader, fallbackLoader, delegate) = makeSUT()
+        
+        XCTAssertEqual(primaryLoader.loadCallCount, 0)
+        XCTAssertEqual(fallbackLoader.loadCallCount, 0)
+        XCTAssertEqual(delegate.receivedViewModels.count, 0)
+    }
+    
     // MARK: - Helpers
     
     private func makeSUT(updateInterval: TimeInterval = 1.0, file: StaticString = #file, line: UInt = #line) -> (sut: BTCPriceMonitor, primaryLoader: LoaderSpy, fallbackLoader: LoaderSpy, delegate: DelegateSpy) {
