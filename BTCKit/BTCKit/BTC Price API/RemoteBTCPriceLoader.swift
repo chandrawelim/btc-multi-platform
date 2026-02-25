@@ -17,7 +17,8 @@ public final class RemoteBTCPriceLoader: BTCPriceLoader {
     }
     
     public func load(completion: @escaping (BTCPriceLoader.Result) -> Void) {
-        client.get(from: endpoint.url) { result in
+        client.get(from: endpoint.url) { [weak self] result in
+            guard let self = self else { return }
             switch result {
             case let .success((data, response)):
                 completion(Result {
