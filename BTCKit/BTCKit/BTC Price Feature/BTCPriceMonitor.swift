@@ -30,4 +30,8 @@ public final class BTCPriceMonitor {
         self.updateInterval = updateInterval
         self.queue = queue
     }
+    
+    public func start() {
+        primaryLoader.load { _ in }
+    }
 }

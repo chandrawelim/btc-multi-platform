@@ -18,6 +18,14 @@ final class BTCPriceMonitorTests: XCTestCase {
         XCTAssertEqual(delegate.receivedViewModels.count, 0)
     }
     
+    func test_start_requestsPriceFromPrimaryLoader() {
+        let (sut, primaryLoader, _, _) = makeSUT()
+        
+        sut.start()
+        
+        XCTAssertEqual(primaryLoader.loadCallCount, 1)
+    }
+    
     // MARK: - Helpers
     
     private func makeSUT(updateInterval: TimeInterval = 1.0, file: StaticString = #file, line: UInt = #line) -> (sut: BTCPriceMonitor, primaryLoader: LoaderSpy, fallbackLoader: LoaderSpy, delegate: DelegateSpy) {
