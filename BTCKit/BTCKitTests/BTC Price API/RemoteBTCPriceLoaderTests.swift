@@ -44,6 +44,27 @@ final class RemoteBTCPriceLoaderTests: XCTestCase {
         })
     }
     
+    func test_load_deliversErrorOnNon200HTTPResponse() {
+        let (sut, client) = makeSUT(endpoint: .binance)
+        let samples = [199, 201, 300, 400, 500]
+        
+        samples.enumerated().forEach { index, code in
+            expect(sut, toCompleteWith: .failure(BTCPriceMapper.Error.invalidData), when: {
+                let json = makeBinanceJSON(price: "87769.24")
+                client.complete(withStatusCode: code, data: json, at: index)
+            })
+        }
+    }
+    
+    func test_load_deliversErrorOn200HTTPResponseWithInvalidJSON() {
+        let (sut, client) = makeSUT(endpoint: .binance)
+        let invalidJSON = Data("invalid json".utf8)
+        
+        expect(sut, toCompleteWith: .failure(BTCPriceMapper.Error.invalidData), when: {
+            client.complete(withStatusCode: 200, data: invalidJSON)
+        })
+    }
+    
     // MARK: - Helpers
     
     private func makeSUT(endpoint: BTCPriceEndpoint, file: StaticString = #file, line: UInt = #line) -> (sut: RemoteBTCPriceLoader, client: HTTPClientSpy) {
