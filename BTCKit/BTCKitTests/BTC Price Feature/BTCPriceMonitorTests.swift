@@ -25,3 +25,11 @@ final class BTCPriceMonitorTests: XCTestCase {
         }
     }
 }
+
+private class DelegateSpy: BTCPriceMonitorDelegate {
+    var receivedViewModels = [BTCPriceViewModel]()
+    
+    func didUpdatePrice(_ viewModel: BTCPriceViewModel) {
+        receivedViewModels.append(viewModel)
+    }
+}
