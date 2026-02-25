@@ -16,12 +16,18 @@ public final class BTCPriceMonitor {
     
     private let primaryLoader: BTCPriceLoader
     private let fallbackLoader: BTCPriceLoader
+    private let updateInterval: TimeInterval
+    private let queue: DispatchQueue
     
     public init(
         primaryLoader: BTCPriceLoader,
-        fallbackLoader: BTCPriceLoader
+        fallbackLoader: BTCPriceLoader,
+        updateInterval: TimeInterval = 1.0,
+        queue: DispatchQueue = .main
     ) {
         self.primaryLoader = primaryLoader
         self.fallbackLoader = fallbackLoader
+        self.updateInterval = updateInterval
+        self.queue = queue
     }
 }
