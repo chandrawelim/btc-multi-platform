@@ -26,6 +26,25 @@ final class BTCPriceMonitorTests: XCTestCase {
         XCTAssertEqual(primaryLoader.loadCallCount, 1)
     }
     
+    func test_start_schedulesUpdatesAtInterval() {
+        let (sut, primaryLoader, _, _) = makeSUT(updateInterval: 0.1)
+        
+        sut.start()
+   
+        DispatchQueue.main.async {
+            primaryLoader.complete(with: .success(BTCPrice(price: Decimal(0), timestamp: Date())))
+        }
+        
+        let exp = expectation(description: "Wait for timer")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            exp.fulfill()
+        }
+        
+        wait(for: [exp], timeout: 1.0)
+        
+        XCTAssertGreaterThan(primaryLoader.loadCallCount, 1)
+    }
+    
     // MARK: - Helpers
     
     private func makeSUT(updateInterval: TimeInterval = 1.0, file: StaticString = #file, line: UInt = #line) -> (sut: BTCPriceMonitor, primaryLoader: LoaderSpy, fallbackLoader: LoaderSpy, delegate: DelegateSpy) {

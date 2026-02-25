@@ -17,6 +17,8 @@ public final class BTCPriceMonitor {
     private let primaryLoader: BTCPriceLoader
     private let fallbackLoader: BTCPriceLoader
     private let updateInterval: TimeInterval
+    private var timer: Timer?
+    private var isUpdating = false
     private let queue: DispatchQueue
     
     public init(
@@ -32,6 +34,25 @@ public final class BTCPriceMonitor {
     }
     
     public func start() {
-        primaryLoader.load { _ in }
+        stop()
+        updatePrice()
+        timer = Timer.scheduledTimer(withTimeInterval: updateInterval, repeats: true) { [weak self] _ in
+            self?.updatePrice()
+        }
+    }
+    
+    public func stop() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    private func updatePrice() {
+        guard !isUpdating else { return }
+        isUpdating = true
+        
+        primaryLoader.load { [weak self] result in
+            guard let self = self else { return }
+            isUpdating = false
+        }
     }
 }
