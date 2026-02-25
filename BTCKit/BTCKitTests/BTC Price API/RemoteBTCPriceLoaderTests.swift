@@ -65,6 +65,27 @@ final class RemoteBTCPriceLoaderTests: XCTestCase {
         })
     }
     
+    func test_load_deliversPriceOn200HTTPResponseWithValidBinanceJSON() {
+        let (sut, client) = makeSUT(endpoint: .binance)
+        let price = "87769.24"
+        let json = makeBinanceJSON(price: price)
+        
+        expect(sut, toCompleteWith: .success(BTCPrice(price: Decimal(string: price)!, timestamp: Date())), when: {
+            client.complete(withStatusCode: 200, data: json)
+        })
+    }
+    
+    func test_load_deliversPriceOn200HTTPResponseWithValidCryptoCompareJSON() {
+        let (sut, client) = makeSUT(endpoint: .cryptoCompare)
+        let price = 87777.54
+        let lastUpdate: TimeInterval = 1764035839
+        let json = makeCryptoCompareJSON(price: price, lastUpdate: lastUpdate)
+        
+        expect(sut, toCompleteWith: .success(BTCPrice(price: Decimal(price), timestamp: Date(timeIntervalSince1970: lastUpdate))), when: {
+            client.complete(withStatusCode: 200, data: json)
+        })
+    }
+    
     // MARK: - Helpers
     
     private func makeSUT(endpoint: BTCPriceEndpoint, file: StaticString = #file, line: UInt = #line) -> (sut: RemoteBTCPriceLoader, client: HTTPClientSpy) {
@@ -96,5 +117,23 @@ final class RemoteBTCPriceLoaderTests: XCTestCase {
         action()
         
         wait(for: [exp], timeout: 1.0)
+    }
+    
+    private func makeBinanceJSON(price: String) -> Data {
+        let json: [String: Any] = [
+            "symbol": "BTCUSDT",
+            "price": price
+        ]
+        return try! JSONSerialization.data(withJSONObject: json)
+    }
+    
+    private func makeCryptoCompareJSON(price: Double, lastUpdate: TimeInterval) -> Data {
+        let json: [String: Any] = [
+            "RAW": [
+                "PRICE": price,
+                "LASTUPDATE": lastUpdate
+            ]
+        ]
+        return try! JSONSerialization.data(withJSONObject: json)
     }
 }
