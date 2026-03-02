@@ -59,10 +59,22 @@ public final class BTCPriceMonitor {
                 queue.async { [weak self] in
                     self?.delegate?.didUpdatePrice(BTCPricePresenter.map(price))
                 }
+                isUpdating = false
             case .failure:
-                break
+                fallbackLoader.load { [weak self] fallbackResult in
+                    guard let self = self else { return }
+                    switch fallbackResult {
+                    case .success(let price):
+                        lastSuccessfulPrice = price
+                        queue.async { [weak self] in
+                            self?.delegate?.didUpdatePrice(BTCPricePresenter.map(price))
+                        }
+                    case .failure:
+                        break
+                    }
+                    isUpdating = false
+                }
             }
-            isUpdating = false
         }
     }
 }

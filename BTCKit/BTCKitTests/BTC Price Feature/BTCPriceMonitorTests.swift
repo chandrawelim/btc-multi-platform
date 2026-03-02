@@ -60,6 +60,31 @@ final class BTCPriceMonitorTests: XCTestCase {
         XCTAssertNil(delegate.receivedViewModels.first?.lastUpdatedDate)
     }
     
+    func test_start_onPrimaryFailure_requestsFallbackLoader() {
+        let (sut, primaryLoader, fallbackLoader, _) = makeSUT()
+        
+        sut.start()
+        primaryLoader.complete(with: .failure(anyNSError()))
+        
+        XCTAssertEqual(primaryLoader.loadCallCount, 1)
+        XCTAssertEqual(fallbackLoader.loadCallCount, 1)
+    }
+    
+    func test_start_onPrimaryFailureAndFallbackSuccess_notifiesDelegateWithMappedViewModel() {
+        let (sut, primaryLoader, fallbackLoader, delegate) = makeSUT()
+        let price = BTCPrice(price: Decimal(50000), timestamp: Date())
+        
+        sut.start()
+        primaryLoader.complete(with: .failure(anyNSError()))
+        fallbackLoader.complete(with: .success(price))
+        
+        expectDelegateToReceiveViewModel(on: .main, timeout: 1.0)
+        
+        XCTAssertEqual(delegate.receivedViewModels.count, 1)
+        XCTAssertEqual(delegate.receivedViewModels.first?.price, "$50,000.00")
+        XCTAssertNil(delegate.receivedViewModels.first?.errorMessage)
+    }
+    
     // MARK: - Helpers
     
     private func expectDelegateToReceiveViewModel(on queue: DispatchQueue, timeout: TimeInterval = 1.0) {
