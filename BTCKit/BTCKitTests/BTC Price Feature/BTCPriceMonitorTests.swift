@@ -45,9 +45,30 @@ final class BTCPriceMonitorTests: XCTestCase {
         XCTAssertGreaterThan(primaryLoader.loadCallCount, 1)
     }
     
+    func test_start_onPrimarySuccess_notifiesDelegateWithMappedViewModel() {
+        let (sut, primaryLoader, _, delegate) = makeSUT()
+        let price = BTCPrice(price: Decimal(87769.24), timestamp: Date())
+        
+        sut.start()
+        primaryLoader.complete(with: .success(price))
+        
+        expectDelegateToReceiveViewModel(on: .main, timeout: 1.0)
+        
+        XCTAssertEqual(delegate.receivedViewModels.count, 1)
+        XCTAssertEqual(delegate.receivedViewModels.first?.price, "$87,769.24")
+        XCTAssertNil(delegate.receivedViewModels.first?.errorMessage)
+        XCTAssertNil(delegate.receivedViewModels.first?.lastUpdatedDate)
+    }
+    
     // MARK: - Helpers
     
-    private func makeSUT(updateInterval: TimeInterval = 1.0, file: StaticString = #file, line: UInt = #line) -> (sut: BTCPriceMonitor, primaryLoader: LoaderSpy, fallbackLoader: LoaderSpy, delegate: DelegateSpy) {
+    private func expectDelegateToReceiveViewModel(on queue: DispatchQueue, timeout: TimeInterval = 1.0) {
+        let exp = expectation(description: "Wait for delegate callback")
+        queue.async { exp.fulfill() }
+        wait(for: [exp], timeout: timeout)
+    }
+    
+    private func makeSUT(updateInterval: TimeInterval = 1.0, queue: DispatchQueue = .main, file: StaticString = #file, line: UInt = #line) -> (sut: BTCPriceMonitor, primaryLoader: LoaderSpy, fallbackLoader: LoaderSpy, delegate: DelegateSpy) {
         let primaryLoader = LoaderSpy()
         let fallbackLoader = LoaderSpy()
         let delegate = DelegateSpy()
@@ -55,7 +76,7 @@ final class BTCPriceMonitorTests: XCTestCase {
             primaryLoader: primaryLoader,
             fallbackLoader: fallbackLoader,
             updateInterval: updateInterval,
-            queue: .main
+            queue: queue
         )
         sut.delegate = delegate
         trackForMemoryLeaks(sut, file: file, line: line)

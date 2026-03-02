@@ -19,6 +19,7 @@ public final class BTCPriceMonitor {
     private let updateInterval: TimeInterval
     private var timer: Timer?
     private var isUpdating = false
+    private var lastSuccessfulPrice: BTCPrice?
     private let queue: DispatchQueue
     
     public init(
@@ -52,6 +53,15 @@ public final class BTCPriceMonitor {
         
         primaryLoader.load { [weak self] result in
             guard let self = self else { return }
+            switch result {
+            case .success(let price):
+                lastSuccessfulPrice = price
+                queue.async { [weak self] in
+                    self?.delegate?.didUpdatePrice(BTCPricePresenter.map(price))
+                }
+            case .failure:
+                break
+            }
             isUpdating = false
         }
     }
