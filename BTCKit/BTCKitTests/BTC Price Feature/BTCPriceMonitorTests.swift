@@ -85,6 +85,47 @@ final class BTCPriceMonitorTests: XCTestCase {
         XCTAssertNil(delegate.receivedViewModels.first?.errorMessage)
     }
     
+    func test_start_onPrimaryAndFallbackFailure_notifiesDelegateWithErrorViewModelAndNoLastPrice() {
+        let (sut, primaryLoader, fallbackLoader, delegate) = makeSUT()
+        
+        sut.start()
+        primaryLoader.complete(with: .failure(anyNSError()))
+        fallbackLoader.complete(with: .failure(anyNSError()))
+        
+        expectDelegateToReceiveViewModel(on: .main, timeout: 1.0)
+        
+        XCTAssertEqual(delegate.receivedViewModels.count, 1)
+        XCTAssertEqual(delegate.receivedViewModels.first?.price, "$0.00")
+        XCTAssertEqual(delegate.receivedViewModels.first?.errorMessage, "Failed to load data")
+        XCTAssertNil(delegate.receivedViewModels.first?.lastUpdatedDate)
+    }
+    
+    func test_start_onPrimaryAndFallbackFailure_afterPreviousSuccess_notifiesDelegateWithErrorAndLastUpdatedDate() {
+        let (sut, primaryLoader, fallbackLoader, delegate) = makeSUT(updateInterval: 0.1)
+        let date = Date(timeIntervalSince1970: 1764035839)
+        let lastPrice = BTCPrice(price: Decimal(87769.24), timestamp: date)
+        
+        sut.start()
+        primaryLoader.complete(with: .success(lastPrice))
+        expectDelegateToReceiveViewModel(on: .main, timeout: 1.0)
+        
+        let exp = expectation(description: "Wait for second update cycle")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            primaryLoader.complete(with: .failure(anyNSError()), at: 1)
+            fallbackLoader.complete(with: .failure(anyNSError()), at: 0)
+            DispatchQueue.main.async { exp.fulfill() }
+        }
+        wait(for: [exp], timeout: 1.0)
+        
+        XCTAssertEqual(delegate.receivedViewModels.count, 2)
+        let errorViewModel = delegate.receivedViewModels.last
+        XCTAssertEqual(errorViewModel?.price, "$87,769.24")
+        XCTAssertNotNil(errorViewModel?.errorMessage)
+        XCTAssertTrue(errorViewModel?.errorMessage?.contains("Failed to update value") == true)
+        XCTAssertTrue(errorViewModel?.errorMessage?.contains("Displaying last updated value") == true)
+        XCTAssertEqual(errorViewModel?.lastUpdatedDate, date)
+    }
+    
     // MARK: - Helpers
     
     private func expectDelegateToReceiveViewModel(on queue: DispatchQueue, timeout: TimeInterval = 1.0) {

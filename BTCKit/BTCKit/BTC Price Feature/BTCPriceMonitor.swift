@@ -70,7 +70,9 @@ public final class BTCPriceMonitor {
                             self?.delegate?.didUpdatePrice(BTCPricePresenter.map(price))
                         }
                     case .failure:
-                        break
+                        queue.async { [weak self] in
+                            self?.delegate?.didUpdatePrice(BTCPricePresenter.mapError(lastUpdatedPrice: self?.lastSuccessfulPrice))
+                        }
                     }
                     isUpdating = false
                 }
